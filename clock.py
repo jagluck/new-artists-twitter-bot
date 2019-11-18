@@ -1,14 +1,23 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
+from bot import *
 
 sched = BlockingScheduler()
 
+# @sched.scheduled_job('interval', minutes=5)
+# def timed_job():
+#     print("start search")
+#     cityName = "Washington, DC, US"
+#     cityId = "1409"
+#     days = 1
+#     runBot(days,cityName,cityId)
 
-@sched.scheduled_job('interval', minutes=3)
-def timed_job():
-    print('This job is run every three minutes.')
-    
-# @sched.scheduled_job('cron', day_of_week='mon-sun', hour=9)
-# def scheduled_job():
-#     print('This job is run every weekday at 9am.')
-
+@sched.scheduled_job('cron', hour=8)
+def scheduled_job():
+    print("it is 8am - start search")
+    cityName = "Washington, DC, US"
+    cityId = "1409"
+    days = 1
+    runBot(days,cityName,cityId)
+              
+print("start script")
 sched.start()
