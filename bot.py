@@ -131,6 +131,7 @@ def runBot(days,cityName,cityId):
     artistsWhoPlayedInDC = []
     upcomingShows = getUpcomingShows(days,cityId)
     upcomingShows = upcomingShows[upcomingShows["locationCity"] == cityName]
+    upcomingShows.drop_duplicates(subset ="artistId", inplace = True) 
     for artistId, artistName, artistUrl, venueName, eventDate, eventUrl in zip(upcomingShows["artistId"],upcomingShows["artistName"],upcomingShows["artistUrl"],upcomingShows["venueName"],upcomingShows["date"],upcomingShows["eventUrl"]):
 
         if artistId not in artistsWhoPlayedInDC:
