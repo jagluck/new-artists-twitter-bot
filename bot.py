@@ -4,22 +4,24 @@ from datetime import datetime, timedelta, date
 import pandas as pd
 import tweepy
 import os
-    
-# keys={}
-# with open("/Users/jagluck/Documents/GitHub/new-artists-twitter-bot/keys.json","r") as f:
-#     keys = json.loads(f.read())
 
+# to run on heroku
 # Consumer keys and access tokens, used for OAuth
-songkick_api_key = os.environ['songkick_api_key']
-tw_consumer_key = os.environ["tw_consumer_key"]
-tw_consumer_secret = os.environ["tw_consumer_secret"]
-tw_access_token = os.environ["tw_access_token"]
-tw_access_token_secret = os.environ["tw_access_token_secret"]
-# songkick_api_key = keys['songkick_api_key']
-# tw_consumer_key = keys["tw_consumer_key"]
-# tw_consumer_secret = keys["tw_consumer_secret"]
-# tw_access_token = keys["tw_access_token"]
-# tw_access_token_secret = keys["tw_access_token_secret"]
+# songkick_api_key = os.environ['songkick_api_key']
+# tw_consumer_key = os.environ["tw_consumer_key"]
+# tw_consumer_secret = os.environ["tw_consumer_secret"]
+# tw_access_token = os.environ["tw_access_token"]
+# tw_access_token_secret = os.environ["tw_access_token_secret"]
+
+# to run locally
+keys={}
+with open(os.path.abspath("keys.json"),"r") as f:
+    keys = json.loads(f.read())
+songkick_api_key = keys['songkick_api_key']
+tw_consumer_key = keys["tw_consumer_key"]
+tw_consumer_secret = keys["tw_consumer_secret"]
+tw_access_token = keys["tw_access_token"]
+tw_access_token_secret = keys["tw_access_token_secret"]
 
 
 # OAuth process, using the keys and tokens
@@ -77,6 +79,7 @@ def getUpcomingShows(daysAhead, metroId):
     venueIds = []
     venueNames = []
     locationCities = []
+    concertTimes = []
     
     page = 1
     minDate = str(date.today())
@@ -102,6 +105,7 @@ def getUpcomingShows(daysAhead, metroId):
                     venueIds.append(event['venue']['id'])
                     venueNames.append(event['venue']['displayName'])
                     locationCities.append(event['location']['city']) 
+                    concertTimes.append(event["start"]["datetime"])
  
         page = page + 1
         resp = getUpcomingShowsPage(metroId, minDate,maxDate, page)
@@ -119,24 +123,47 @@ def getUpcomingShows(daysAhead, metroId):
                 "date" : dates,
                 "venueId" : venueIds,
                 "venueName" : venueNames,
-                "locationCity" : locationCities
+                "locationCity" : locationCities,
+                "concertTime" : concertTimes
             })
     
     return data
 
+# this adds the correct ordinal to the date
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
-def runBot(days,cityName,cityId):
+# Python code to merge dict using a single expression 
+def Merge(dict1, dict2): 
+    res = {**dict1, **dict2} 
+    return res
+
+def sendNextTweet(toTweet):
+    keys = toTweet.keys()
     
-    artistsWhoPlayedInDC = []
+    concertTimes = {}
+    for key in keys:
+        if (toTweet[key]["concertTime"] != None):
+            concertTimes[key] = datetime.strptime(toTweet[key]["concertTime"],"%Y-%m-%dT%H:%M:%S%z")
+        else:
+            concertTimes[key] = None
+    A = {'Name1':34, 'Name2': 12, 'Name6': 46}
+    thisEl = sorted(concertTimes, key=concertTimes.get)[0]
+    print(toTweet[thisEl]["content"])
+    del toTweet[thisEl]
+    return toTweet
+
+# this runs once a day, it finds new artists in the area
+def runBot(days,cityName,cityId, artistsWhoPlayedInDC):
+    toTweet = {}
     upcomingShows = getUpcomingShows(days,cityId)
     upcomingShows = upcomingShows[upcomingShows["locationCity"] == cityName]
     upcomingShows.drop_duplicates(subset ="artistId", inplace = True) 
-    for artistId, artistName, artistUrl, venueName, eventDate, eventUrl in zip(upcomingShows["artistId"],upcomingShows["artistName"],upcomingShows["artistUrl"],upcomingShows["venueName"],upcomingShows["date"],upcomingShows["eventUrl"]):
+    for artistId, artistName, artistUrl, venueName, eventDate, eventUrl, concertTime in zip(upcomingShows["artistId"],upcomingShows["artistName"],upcomingShows["artistUrl"],upcomingShows["venueName"],upcomingShows["date"],upcomingShows["eventUrl"], upcomingShows["concertTime"]):
 
         if artistId not in artistsWhoPlayedInDC:
             if not wasArtistInCity(cityName, artistId):
                 dateString = datetime.strptime(eventDate, "%Y-%m-%d").strftime("%B") + " " + ordinal(datetime.strptime(eventDate, "%Y-%m-%d").day)
                 content = (str(artistName) + " is playing their first concert in DC at " + venueName + " on " + dateString + " " + eventUrl)
-                sendTweet(content)
-            artistsWhoPlayedInDC.append(artistId)      
+                toTweet[artistId] = {"content" : content, "concertTime" : concertTime}
+            artistsWhoPlayedInDC.append(artistId)  
+    return artistsWhoPlayedInDC, toTweet
