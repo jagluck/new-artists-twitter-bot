@@ -138,19 +138,19 @@ def Merge(dict1, dict2):
     return res
 
 def sendNextTweet(toTweet):
-    keys = toTweet.keys()
-    
-    concertTimes = {}
-    for key in keys:
-        if (toTweet[key]["concertTime"] != None):
-            concertTimes[key] = datetime.strptime(toTweet[key]["concertTime"],"%Y-%m-%dT%H:%M:%S%z")
-        else:
-            concertTimes[key] = None
-    A = {'Name1':34, 'Name2': 12, 'Name6': 46}
-    thisEl = sorted(concertTimes, key=concertTimes.get)[0]
-    print(toTweet[thisEl]["content"])
-    sendTweet(toTweet[thisEl]["content"])
-    del toTweet[thisEl]
+    if (toTweet != {}):
+        keys = toTweet.keys()
+
+        concertTimes = {}
+        for key in keys:
+            if (toTweet[key]["concertTime"] != None):
+                concertTimes[key] = datetime.strptime(toTweet[key]["concertTime"],"%Y-%m-%dT%H:%M:%S%z")
+            else:
+                concertTimes[key] = None
+        thisEl = sorted(concertTimes, key=concertTimes.get)[0]
+        print(toTweet[thisEl]["content"])
+        sendTweet(toTweet[thisEl]["content"])
+        del toTweet[thisEl]
     return toTweet
 
 # this runs once a day, it finds new artists in the area
