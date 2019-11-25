@@ -7,21 +7,21 @@ import os
 
 # to run on heroku
 # Consumer keys and access tokens, used for OAuth
-# songkick_api_key = os.environ['songkick_api_key']
-# tw_consumer_key = os.environ["tw_consumer_key"]
-# tw_consumer_secret = os.environ["tw_consumer_secret"]
-# tw_access_token = os.environ["tw_access_token"]
-# tw_access_token_secret = os.environ["tw_access_token_secret"]
+songkick_api_key = os.environ['songkick_api_key']
+tw_consumer_key = os.environ["tw_consumer_key"]
+tw_consumer_secret = os.environ["tw_consumer_secret"]
+tw_access_token = os.environ["tw_access_token"]
+tw_access_token_secret = os.environ["tw_access_token_secret"]
 
-# to run locally
-keys={}
-with open(os.path.abspath("keys.json"),"r") as f:
-    keys = json.loads(f.read())
-songkick_api_key = keys['songkick_api_key']
-tw_consumer_key = keys["tw_consumer_key"]
-tw_consumer_secret = keys["tw_consumer_secret"]
-tw_access_token = keys["tw_access_token"]
-tw_access_token_secret = keys["tw_access_token_secret"]
+# # to run locally
+# keys={}
+# with open(os.path.abspath("keys.json"),"r") as f:
+#     keys = json.loads(f.read())
+# songkick_api_key = keys['songkick_api_key']
+# tw_consumer_key = keys["tw_consumer_key"]
+# tw_consumer_secret = keys["tw_consumer_secret"]
+# tw_access_token = keys["tw_access_token"]
+# tw_access_token_secret = keys["tw_access_token_secret"]
 
 
 # OAuth process, using the keys and tokens
@@ -149,6 +149,7 @@ def sendNextTweet(toTweet):
     A = {'Name1':34, 'Name2': 12, 'Name6': 46}
     thisEl = sorted(concertTimes, key=concertTimes.get)[0]
     print(toTweet[thisEl]["content"])
+    sendTweet(toTweet[thisEl]["content"])
     del toTweet[thisEl]
     return toTweet
 
