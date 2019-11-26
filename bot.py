@@ -139,6 +139,7 @@ def Merge(dict1, dict2):
 
 def sendNextTweet(toTweet):
     if (toTweet != {}):
+        # maybe add a check now or somekind of resorting logic to make sure show has not already happened
         keys = toTweet.keys()
 
         concertTimes = {}
@@ -151,6 +152,8 @@ def sendNextTweet(toTweet):
         print(toTweet[thisEl]["content"])
         sendTweet(toTweet[thisEl]["content"])
         del toTweet[thisEl]
+    else:
+        print("nothing to send")
     return toTweet
 
 # this runs once a day, it finds new artists in the area
