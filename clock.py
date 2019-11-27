@@ -3,16 +3,12 @@ from bot import *
 
 toTweet = {}
 artistsWhoPlayedInDC = []
-    
-sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=60)
 def timed_job():
     global toTweet
     print("Start sending new tweet now")
     toTweet = sendNextTweet(toTweet)
 
-@sched.scheduled_job('cron', hour=8)
 def scheduled_job():
     print("it is 8am - start search")
     global toTweet
@@ -22,6 +18,12 @@ def scheduled_job():
     days = 1
     artistsWhoPlayedInDC, toTweetNew = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
     toTweet = Merge(toTweet, toTweetNew)
-              
+
+    from apscheduler.schedulers.blocking import BlockingScheduler
+
+
+scheduler = BlockingScheduler()
+scheduler.add_job(scheduled_job, 'cron', hour=8)
+scheduler.add_job(timed_job, 'interval', minutes=60)
+scheduler.start()
 print("start script")
-sched.start()
