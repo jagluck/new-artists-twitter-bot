@@ -12,7 +12,7 @@ def timed_job():
 def scheduled_job():
     print("it is 8am - start search")
     global toTweet
-    global artistsWhoPlayedInDc
+    global artistsWhoPlayedInDC
     cityName = "Washington, DC, US"
     cityId = "1409"
     days = 1
