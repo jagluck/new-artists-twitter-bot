@@ -7,19 +7,20 @@ artistsWhoPlayedInDC = []
 def timed_job():
     global toTweet
     print("Start sending new tweet now")
+    print(len(toTweet))
     toTweet = sendNextTweet(toTweet)
+    print(len(toTweet))
 
 def scheduled_job():
     print("it is 8am - start search")
-    global toTweet
     global artistsWhoPlayedInDC
+    global toTweet
     cityName = "Washington, DC, US"
     cityId = "1409"
     days = 1
-    artistsWhoPlayedInDC, toTweetNew = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
-    toTweet = Merge(toTweet, toTweetNew)
-
-    from apscheduler.schedulers.blocking import BlockingScheduler
+    artistsWhoPlayedInDC, toTweetNew  = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
+    toTweet = pd.concat([toTweet, toTweetNew], ignore_index=True)
+    toTweet = toTweet.sort_values(by=['concertTime'], ascending=True)
 
 
 scheduler = BlockingScheduler()

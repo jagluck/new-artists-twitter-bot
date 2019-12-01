@@ -1,6 +1,8 @@
+# import packages we need
 import requests as requests
 import json
 from datetime import datetime, timedelta, date
+from pytz import timezone
 import pandas as pd
 import tweepy
 import os
@@ -31,9 +33,14 @@ auth.set_access_token(tw_access_token, tw_access_token_secret)
 # Creation of the actual interface, using authentication
 api = tweepy.API(auth)
 
+# our timezone
+eastern = timezone('US/Eastern')
+
+# this sends a tweet :)
 def sendTweet(content):
     api.update_status(content)
     
+# this gets one page of an artists history, up to 50 shows
 def getArtistHistoryPage(artistId,page):
     
     url = "https://api.songkick.com/api/3.0/artists/" + str(artistId) + "/gigography.json"
@@ -41,7 +48,8 @@ def getArtistHistoryPage(artistId,page):
     resp = requests.get(url, params=params) 
     return json.loads(resp.text)
 
-
+# this searches an artists full history and returns 
+# true or false if they have ever played a show in dc
 def wasArtistInCity(city, artistId):
     
     page = 1
@@ -59,23 +67,26 @@ def wasArtistInCity(city, artistId):
     
     return False
 
-def getUpcomingShowsPage(metroId, minDate,maxDate,page):
+# this gets one page of the upcoming shows in DC, up to 50 shows
+def getUpcomingShowsPage(metroId, minDate, maxDate, page):
     
     url = "https://api.songkick.com/api/3.0/metro_areas/" + metroId + "/calendar.json"
     params = {'apikey': songkick_api_key, "min_date" : minDate, "max_date" : maxDate, "page" : page, "per_page" : 50}
     resp = requests.get(url, params=params) 
     return json.loads(resp.text)
 
+# this gets all of the upcoming shows in DC
 def getUpcomingShows(daysAhead, metroId):
    
     artistIds = []
     artistNames = []
     artistUrls = []
     billings = []
+    billingIndexes = []
     eventIds = []
     eventTypes = []
     eventUrls = []
-    dates = []
+    eventDates = []
     venueIds = []
     venueNames = []
     locationCities = []
@@ -95,13 +106,14 @@ def getUpcomingShows(daysAhead, metroId):
                 artist = performance["artist"]
                 if ("PRIVATE EVENT" not in artist["displayName"]):
                     billings.append(performance["billing"])
+                    billingIndexes.append(performance["billingIndex"])
                     artistIds.append(artist["id"])
                     artistNames.append(artist["displayName"])
                     artistUrls.append(artist["uri"])
                     eventIds.append(event['id']) 
                     eventTypes.append(event['type'])
                     eventUrls.append(event['uri'])
-                    dates.append(event['start']['date'])
+                    eventDates.append(event['start']['date'])
                     venueIds.append(event['venue']['id'])
                     venueNames.append(event['venue']['displayName'])
                     locationCities.append(event['location']['city']) 
@@ -117,10 +129,11 @@ def getUpcomingShows(daysAhead, metroId):
                 "artistName" : artistNames,
                 "artistUrl" : artistUrls,
                 "billing" : billings,
+                "billingIndex" : billingIndexes,
                 "eventId" : eventIds,
                 "eventType" : eventTypes,
                 "eventUrl" : eventUrls,
-                "date" : dates,
+                "eventDate" : eventDates,
                 "venueId" : venueIds,
                 "venueName" : venueNames,
                 "locationCity" : locationCities,
@@ -132,42 +145,105 @@ def getUpcomingShows(daysAhead, metroId):
 # this adds the correct ordinal to the date
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
-# Python code to merge dict using a single expression 
-def Merge(dict1, dict2): 
-    res = {**dict1, **dict2} 
-    return res
-
+# this runs every hour, it sends the first tweet that is qualified if there is one
 def sendNextTweet(toTweet):
-    if (toTweet != {}):
+    if (len(toTweet) != 0):
         # maybe add a check now or somekind of resorting logic to make sure show has not already happened
-        keys = toTweet.keys()
+        
+        timeNow = datetime.now(eastern)
+        
+        thisTweet = toTweet['content'][0]
+        thisTime = toTweet['concertTime'][0]
+        thisArtist = toTweet['artistName'][0]
+        
+        while (timeNow > thisTime and len(toTweet) > 0):
 
-        concertTimes = {}
-        for key in keys:
-            if (toTweet[key]["concertTime"] != None):
-                concertTimes[key] = datetime.strptime(toTweet[key]["concertTime"],"%Y-%m-%dT%H:%M:%S%z")
-            else:
-                concertTimes[key] = None
-        thisEl = sorted(concertTimes, key=concertTimes.get)[0]
-        print(toTweet[thisEl]["content"])
-        sendTweet(toTweet[thisEl]["content"])
-        del toTweet[thisEl]
+            toTweet = toTweet[toTweet['artistName'] != thisArtist]
+            toTweet = toTweet.reset_index(drop=True)
+            print("show already happened")
+            print(len(toTweet['content']))
+            thisTweet = toTweet['content'][0]
+            thisTime = toTweet['concertTime'][0]
+            thisArtist = toTweet['artistName'][0]
+            
+        if (len(toTweet) > 0):
+            
+            print(thisTweet)
+    
+            # only comment out for testing
+            sendTweet(thisTweet)
+            
+            toTweet = toTweet[toTweet['artistName'] != thisArtist]
+            toTweet = toTweet.reset_index(drop=True)
     else:
         print("nothing to send")
+        
     return toTweet
 
 # this runs once a day, it finds new artists in the area
-def runBot(days,cityName,cityId, artistsWhoPlayedInDC):
-    toTweet = {}
+def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
+        
     upcomingShows = getUpcomingShows(days,cityId)
     upcomingShows = upcomingShows[upcomingShows["locationCity"] == cityName]
     upcomingShows.drop_duplicates(subset ="artistId", inplace = True) 
-    for artistId, artistName, artistUrl, venueName, eventDate, eventUrl, concertTime in zip(upcomingShows["artistId"],upcomingShows["artistName"],upcomingShows["artistUrl"],upcomingShows["venueName"],upcomingShows["date"],upcomingShows["eventUrl"], upcomingShows["concertTime"]):
-
+    
+    contents = []
+    artistIds = []
+    artistNames = []
+    artistNames = []
+    concertTimes = []
+    eventDates = []
+    artistUrls = []
+    billingIndexes = []
+                    
+    for index, row in upcomingShows.iterrows():
+        artistId = row['artistId']
+        eventDate = row['eventDate']
+        concertTime = row['concertTime']
+        venueName = row['venueName']
+        eventUrl = row['eventUrl']
+        artistName = row['artistName']
+        billingIndex = row['billingIndex']
         if artistId not in artistsWhoPlayedInDC:
             if not wasArtistInCity(cityName, artistId):
+                
+                # make the tweet string
                 dateString = datetime.strptime(eventDate, "%Y-%m-%d").strftime("%B") + " " + ordinal(datetime.strptime(eventDate, "%Y-%m-%d").day)
-                content = (str(artistName) + " is playing their first concert in DC at " + venueName + " on " + dateString + " " + eventUrl)
-                toTweet[artistId] = {"content" : content, "concertTime" : concertTime}
+                content = (str(artistName) + " is playing their first show in DC!")
+                if (billingIndex == 1):
+                    content = content + " They are headlining at " + venueName + " on " + dateString + " " + eventUrl
+                else:
+                    content = content + " They are opening at " + venueName + " on " + dateString + " " + eventUrl   
+                    
+                # fix times that are null with noon of the day of cencert so it goes first
+                if (concertTime == None):
+                    concertTime = datetime.strptime(eventDate,"%Y-%m-%d")
+                    concertTime = concertTime.replace(tzinfo=eastern)
+                    concertTime = concertTime + timedelta(hours=(12))
+                else:
+                    concertTime = datetime.strptime(concertTime,"%Y-%m-%dT%H:%M:%S%z")
+                    concertTime = concertTime.replace(tzinfo=eastern)
+                
+                # add one second per billing index
+                concertTime = concertTime + timedelta(seconds=(billingIndex - 1))
+
+                # add values to lists to make dataframe later
+                artistIds.append(artistId)
+                artistNames.append(artistName)
+                contents.append(content)
+                concertTimes.append(concertTime)
+                eventDates.append(eventDate)
+                billingIndexes.append(billingIndex)
+                
             artistsWhoPlayedInDC.append(artistId)  
-    return artistsWhoPlayedInDC, toTweet
+            
+    toTweetNew = pd.DataFrame(
+            {
+                "artistId" : artistIds,
+                "artistName" : artistNames,
+                "content" : contents,
+                "concertTime" : concertTimes,
+                "eventDate" : eventDates,
+                "billingIndex" : billingIndexes
+            })
+    return artistsWhoPlayedInDC, toTweetNew
