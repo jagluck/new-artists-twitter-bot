@@ -225,7 +225,7 @@ def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
                     concertTime = concertTime.replace(tzinfo=eastern)
                 
                 # add one second per billing index
-                concertTime = concertTime + timedelta(seconds=(billingIndex - 1))
+                concertTime = concertTime - timedelta(seconds=(billingIndex - 1))
 
                 # add values to lists to make dataframe later
                 artistIds.append(artistId)
