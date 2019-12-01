@@ -1,7 +1,19 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
+import pandas as pd
 from bot import *
 
-toTweet = {}
+# ******** we will read from a database here ******** #
+
+toTweet = pd.DataFrame(
+        {
+            "artistId" : [],
+            "artistName" : [],
+            "content" : [],
+            "concertTime" : [],
+            "eventDate" : [],
+            "billingIndex" : []
+        })
+
 artistsWhoPlayedInDC = []
 
 def timed_job():
