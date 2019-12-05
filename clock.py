@@ -1,42 +1,14 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
-import pandas as pd
-from bot import *
-
-# ******** we will read from a database here ******** #
-
-toTweet = pd.DataFrame(
-        {
-            "artistId" : [],
-            "artistName" : [],
-            "content" : [],
-            "concertTime" : [],
-            "eventDate" : [],
-            "billingIndex" : []
-        })
-
-artistsWhoPlayedInDC = []
 
 def timed_job():
-    global toTweet
-    print("Start sending new tweet now")
-    print(len(toTweet))
-    toTweet = sendNextTweet(toTweet)
-    print(len(toTweet))
+    onceADay()
 
 def scheduled_job():
-    print("it is 8am - start search")
-    global artistsWhoPlayedInDC
-    global toTweet
-    cityName = "Washington, DC, US"
-    cityId = "1409"
-    days = 1
-    artistsWhoPlayedInDC, toTweetNew  = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
-    toTweet = pd.concat([toTweet, toTweetNew], ignore_index=True)
-    toTweet = toTweet.sort_values(by=['concertTime'], ascending=True)
+    everyHour()
 
 
 scheduler = BlockingScheduler()
-scheduler.add_job(scheduled_job, 'cron', hour=8)
-scheduler.add_job(timed_job, 'interval', minutes=60)
+scheduler.add_job(timed_job, 'cron', hour=8)
+scheduler.add_job(scheduled_job, 'interval', minutes=60)
 scheduler.start()
 print("start script")

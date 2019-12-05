@@ -6,6 +6,8 @@ from pytz import timezone
 import pandas as pd
 import tweepy
 import os
+import psycopg2
+from psycopg2 import extras
 
 # to run on heroku
 # Consumer keys and access tokens, used for OAuth
@@ -14,6 +16,9 @@ tw_consumer_key = os.environ["tw_consumer_key"]
 tw_consumer_secret = os.environ["tw_consumer_secret"]
 tw_access_token = os.environ["tw_access_token"]
 tw_access_token_secret = os.environ["tw_access_token_secret"]
+database_url = os.environ['HEROKU_POSTGRESQL_IVORY_URL']
+heroku_app_name =  os.environ['heroku_app_name']
+table_name =  os.environ['table_name']
 
 # # to run locally
 # keys={}
@@ -24,6 +29,9 @@ tw_access_token_secret = os.environ["tw_access_token_secret"]
 # tw_consumer_secret = keys["tw_consumer_secret"]
 # tw_access_token = keys["tw_access_token"]
 # tw_access_token_secret = keys["tw_access_token_secret"]
+# database_url = keys['HEROKU_POSTGRESQL_IVORY_URL']
+# heroku_app_name =  keys['heroku_app_name']
+# table_name =  keys['table_name']
 
 
 # OAuth process, using the keys and tokens
@@ -152,32 +160,59 @@ def sendNextTweet(toTweet):
         
         timeNow = datetime.now(eastern)
         
-        thisTweet = toTweet['content'][0]
-        thisTime = toTweet['concertTime'][0]
-        thisArtist = toTweet['artistName'][0]
+        didWeTweet = False
         
-        while (timeNow > thisTime and len(toTweet) > 0):
-
-            toTweet = toTweet[toTweet['artistName'] != thisArtist]
-            toTweet = toTweet.reset_index(drop=True)
-            print("show already happened")
-            print(len(toTweet['content']))
-            thisTweet = toTweet['content'][0]
-            thisTime = toTweet['concertTime'][0]
-            thisArtist = toTweet['artistName'][0]
-            
-        if (len(toTweet) > 0):
-            
-            print(thisTweet)
-    
-            # only comment out for testing
-            sendTweet(thisTweet)
-            
-            toTweet = toTweet[toTweet['artistName'] != thisArtist]
-            toTweet = toTweet.reset_index(drop=True)
+        for index,row in toTweet.iterrows():
+            # did we not already tweet something this hour and did it not already happen and did we not already tweet it?
+            if ((didWeTweet == False) and (row['concertTime'] > timeNow) and (row['tweeted'] == 0)):
+                didWeTweet = True
+                thisTweet = row['content']
+                sendTweet(thisTweet)
+                toTweet.loc[index,'tweeted'] = 1
     else:
         print("nothing to send")
         
+    return toTweet
+
+def writeTable(toTweet):
+    toTweet = toTweet.sort_values(by=['concertTime'], ascending=True)
+    if len(toTweet) > 0:
+        conn = psycopg2.connect(database_url)
+        cursor = conn.cursor()
+        df_columns = list(toTweet)
+        columns = ",".join(df_columns)
+        values = "VALUES({})".format(",".join(["%s" for _ in df_columns])) 
+        insert_stmt = "INSERT INTO {} ({}) {}".format(table_name,columns,values)
+
+        cur = conn.cursor()
+        psycopg2.extras.execute_batch(cur, insert_stmt, toTweet.values)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+def clearTable():
+    clear_table = "DELETE FROM " + table_name + ";"
+    conn = psycopg2.connect(database_url)
+    cursor = conn.cursor()
+    cursor.execute(clear_table)
+    conn.commit() # <--- makes sure the change is shown in the database
+    conn.close()
+    cursor.close()
+    
+def readTable():
+    conn = psycopg2.connect(database_url)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM " + table_name) # <--- makes sure the change is shown in the database
+    conn.commit()
+    toTweet = cursor.fetchall()
+    conn.close()
+    cursor.close()
+    
+    toTweet = pd.DataFrame(toTweet,columns=["artistId","artistName","concertTime","content","eventDate","billingIndex","tweeted"])
+    toTweet['concertTime'] = toTweet['concertTime'].apply(lambda x: datetime.strptime(x,"%Y-%m-%d %H:%M:%S+00"))
+    toTweet['concertTime'] = toTweet['concertTime'].apply(lambda x: x - timedelta(hours=(5)) + timedelta(minutes=(4)))
+    toTweet['concertTime'] = toTweet['concertTime'].apply(lambda x: x.replace(tzinfo=eastern))
+    toTweet = toTweet.sort_values(by=['concertTime'], ascending=True)
     return toTweet
 
 # this runs once a day, it finds new artists in the area
@@ -195,6 +230,7 @@ def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
     eventDates = []
     artistUrls = []
     billingIndexes = []
+    tweetedes = []
                     
     for index, row in upcomingShows.iterrows():
         artistId = row['artistId']
@@ -226,7 +262,7 @@ def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
                 
                 # add one second per billing index
                 concertTime = concertTime - timedelta(seconds=(billingIndex - 1))
-
+                
                 # add values to lists to make dataframe later
                 artistIds.append(artistId)
                 artistNames.append(artistName)
@@ -234,16 +270,49 @@ def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
                 concertTimes.append(concertTime)
                 eventDates.append(eventDate)
                 billingIndexes.append(billingIndex)
-                
-            artistsWhoPlayedInDC.append(artistId)  
+                tweetedes.append(0)
             
     toTweetNew = pd.DataFrame(
             {
                 "artistId" : artistIds,
                 "artistName" : artistNames,
-                "content" : contents,
                 "concertTime" : concertTimes,
+                "content" : contents,
                 "eventDate" : eventDates,
-                "billingIndex" : billingIndexes
+                "billingIndex" : billingIndexes,
+                "tweeted" : tweetedes
             })
-    return artistsWhoPlayedInDC, toTweetNew
+    return toTweetNew
+
+def onceADay():
+    toTweet = readTable()
+    artistsWhoPlayedInDC = toTweet['artistId']
+    cityName = "Washington, DC, US"
+    cityId = "1409"
+    days = 1
+    toTweetNew  = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
+
+    # make sure we don't already have a artist
+    toTweetNew = toTweetNew[~toTweetNew['artistId'].isin(artistsWhoPlayedInDC)]
+    # combine results
+    toTweet = pd.concat([toTweet, toTweetNew], ignore_index=True)
+    # remove shows that are very old
+    twoWeeksAgo = datetime.now(eastern) - timedelta(weeks=(2))
+    toTweet = toTweetNew[toTweetNew['concertTime'] > twoWeeksAgo]
+
+    # sort by time
+    toTweet = toTweet.sort_values(by=['concertTime'], ascending=True)
+
+    # clear
+    clearTable()
+    
+    # upload
+    writeTable(toTweet)
+    print("got artists")
+    
+def everyHour():
+    toTweet = readTable()
+    print("Start sending new tweet now")
+    toTweet = sendNextTweet(toTweet)
+    clearTable()
+    writeTable(toTweet)
