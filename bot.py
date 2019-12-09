@@ -1,38 +1,4 @@
-# import packages we need
-import requests as requests
-import json
-from datetime import datetime, timedelta, date
-from pytz import timezone
-import pandas as pd
-import tweepy
-import os
-from database import *
-from songkick import *
-
-# to run on heroku
-# Consumer keys and access tokens, used for OAuth
-songkick_api_key = os.environ['songkick_api_key']
-tw_consumer_key = os.environ["tw_consumer_key"]
-tw_consumer_secret = os.environ["tw_consumer_secret"]
-tw_access_token = os.environ["tw_access_token"]
-tw_access_token_secret = os.environ["tw_access_token_secret"]
-database_url = os.environ['HEROKU_POSTGRESQL_IVORY_URL']
-heroku_app_name =  os.environ['heroku_app_name']
-table_name =  os.environ['table_name']
-
-# # to run locally
-# keys={}
-# with open(os.path.abspath("keys.json"),"r") as f:
-#     keys = json.loads(f.read())
-# songkick_api_key = keys['songkick_api_key']
-# tw_consumer_key = keys["tw_consumer_key"]
-# tw_consumer_secret = keys["tw_consumer_secret"]
-# tw_access_token = keys["tw_access_token"]
-# tw_access_token_secret = keys["tw_access_token_secret"]
-# database_url = keys['HEROKU_POSTGRESQL_IVORY_URL']
-# heroku_app_name =  keys['heroku_app_name']
-# table_name =  keys['table_name']
-
+from config import *
 
 # OAuth process, using the keys and tokens
 auth = tweepy.OAuthHandler(tw_consumer_key, tw_consumer_secret)
@@ -48,23 +14,163 @@ eastern = timezone('US/Eastern')
 def sendTweet(content):
     api.update_status(content)
     
+def formatName(name):
+    name = name.lower()
+    name = name.replace(" ", "")
+    name = name.replace("_", "")
+    name = name.replace("'", "")
+    name = name.replace("\"", "")
+    name = name.replace("(US)", "")
+    name = name.replace(",", "")
+    name = name.replace("(", "")
+    name = name.replace(")", "")
+    name = re.sub('\W', '', name)
+    return name
+
+def findHandle(artistName):
+
+    searchAccounts = api.search_users(artistName,20,1)
+
+    artistName = formatName(artistName)
+#     print(artistName)
+#     print("#####")
+
+    maxScore = 0
+    maxHandle = "None"
+
+    for acj in searchAccounts:
+        thisScore = 0
+        account = acj._json
+#         print(account.keys())
+        thisScreenName = formatName(account['screen_name'])
+        thisName = formatName(account['name'])
+
+#         print("screen name: " + thisScreenName)
+#         print("name: " + thisName)
+
+        # check name
+        if (artistName == thisName):
+#             print("name perfect match +50")
+            thisScore = thisScore + 50
+        elif (artistName in thisName):
+#             print("name sub match +25")
+            thisScore = thisScore + 25
+
+        if ("band" in thisName):
+#             print("name band match +30")
+            thisScore = thisScore + 30
+
+        if ("music" in thisName):
+#             print("name music match +30")
+            thisScore = thisScore + 30
+
+        # check screen name
+        if (artistName == thisScreenName):
+#             print("screen name perfect match +25")
+            thisScore = thisScore + 25
+        elif (artistName in thisScreenName):
+#             print("screen name sub match +13")
+            thisScore = thisScore + 13
+
+        if ("band" in thisScreenName):
+#             print("screen name band match +15")
+            thisScore = thisScore + 15
+
+        if ("music" in thisScreenName):
+#             print("screen name music match +15")
+            thisScore = thisScore + 15
+
+        # check verified
+        if (account['verified'] == True):
+#             print("verified +20")
+            thisScore = thisScore + 20
+
+        # check followers
+        followersPoints = math.ceil(account['followers_count']/100)
+        if (followersPoints > 20):
+            followersPoints = 20
+        thisScore = thisScore + followersPoints
+#         print("followers: +" + str(followersPoints))
+
+        # if they have an image
+        if (account['default_profile_image']):
+#             print("no background image: -50")
+            thisScore = thisScore - 50
+            
+        # see if they have a url
+        if (account['url'] != None):
+            r = requests.head(account['url'], allow_redirects=True)
+            accountLink = r.url.lower()
+            musicSites = ['soundcloud''bandcamp','spotify','itunes']
+            for musicSite in musicSites:
+                if musicSite in accountLink:
+#                     print("music site link " + musicSite + ": +50")
+                    thisScore = thisScore + 50
+                    
+            if (artistName in accountLink):
+#                 print("site link " + artistName + ": +30")
+                thisScore = thisScore + 30
+#             print(r.url)
+
+        # private/public
+        if (account['protected']):
+#             print("protected: -50")
+            thisScore = thisScore - 50
+
+        # check description
+
+        description = account['description'].lower()
+        descriptionWordList = ['mgmt', 'managment','band','inquiries','music','tour','album','stream','song','single']
+        for word in descriptionWordList:
+            if word in description:
+#                 print("description match " + word + ": +20")
+                thisScore = thisScore + 20
+
+        # look for fan accounts
+        if ("fan account" in description):
+#             print("fan account: -100")
+            thisScore = thisScore - 100
+
+#         print("total score: " + str(thisScore))
+#         print("----")
+
+        if (thisScore > maxScore):
+            maxScore = thisScore
+            maxHandle = account['screen_name']
+    
+    if (maxScore > 99):
+        return maxHandle
+    else:
+        return "None"                        
+    
 # this runs every hour, it sends the first tweet that is qualified if there is one
 def sendNextTweet(toTweet):
+    print(len(toTweet))
     if (len(toTweet) != 0):
-        # maybe add a check now or somekind of resorting logic to make sure show has not already happened
         
-        timeNow = datetime.now(eastern)
-        
-        didWeTweet = False
-        
-        for index,row in toTweet.iterrows():
-            # did we not already tweet something this hour and did it not already happen and did we not already tweet it?
-            if ((didWeTweet == False) and (row['concertTime'] > timeNow) and (row['tweeted'] == 0)):
-                didWeTweet = True
-                thisTweet = row['content']
-                print(thisTweet)
-                sendTweet(thisTweet)
-                toTweet.loc[index,'tweeted'] = 1
+        now = datetime.now()
+        if (now.hour < 21):
+
+            # maybe add a check now or somekind of resorting logic to make sure show has not already happened
+
+            timeNow = datetime.now(eastern)
+
+            didWeTweet = False
+
+            for index,row in toTweet.iterrows():
+                # did we not already tweet something this hour and did it not already happen and did we not already tweet it?
+                if ((didWeTweet == False) and (row['concertTime'] > timeNow) and (row['tweeted'] == 0)):
+                    didWeTweet = True
+                    thisTweet = row['content']
+                    handleResponse = findHandle(row['artistName'])
+                    if (handleResponse == "None"):
+                        thisTweet = row['artistName'] + thisTweet
+                    else:
+                        thisTweet = row['artistName'] + " @" + handleResponse + thisTweet
+  
+                    print(thisTweet)
+                    sendTweet(thisTweet)
+                    toTweet.loc[index,'tweeted'] = 1
     else:
         print("nothing to send")
         
@@ -104,7 +210,7 @@ def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
                 
                 # make the tweet string
                 dateString = datetime.strptime(eventDate, "%Y-%m-%d").strftime("%B") + " " + ordinal(datetime.strptime(eventDate, "%Y-%m-%d").day)
-                content = (str(artistName) + " is playing their first show in DC!")
+                content = " is playing their first show in DC!"
                 if (billingIndex == 1):
                     content = content + " They are headlining at " + venueName + " on " + dateString + " " + eventUrl
                 else:
@@ -148,7 +254,7 @@ def onceADay():
     artistsWhoPlayedInDC = toTweet['artistId']
     cityName = "Washington, DC, US"
     cityId = "1409"
-    days = 1
+    days = 3
     toTweetNew  = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
 
     # make sure we don't already have a artist
