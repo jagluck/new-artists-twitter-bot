@@ -10,6 +10,7 @@ import re
 import math
 import psycopg2
 from psycopg2 import extras
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 # to run on heroku
 # Consumer keys and access tokens, used for OAuth

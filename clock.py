@@ -1,5 +1,4 @@
-from apscheduler.schedulers.blocking import BlockingScheduler
-from bot import * 
+from config import * 
 
 def timed_job():
     onceADay()

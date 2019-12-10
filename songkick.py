@@ -1,4 +1,4 @@
-from imports import *
+from config import *
 
 # this gets one page of an artists history, up to 50 shows
 def getArtistHistoryPage(artistId,page):

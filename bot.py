@@ -63,6 +63,10 @@ def findHandle(artistName):
         if ("music" in thisName):
 #             print("name music match +30")
             thisScore = thisScore + 30
+    
+        if ("fanaccount" in thisName or "fanpage" in thisName):
+#             print("fan account: -100")
+            thisScore = thisScore - 100
 
         # check screen name
         if (artistName == thisScreenName):
@@ -79,6 +83,10 @@ def findHandle(artistName):
         if ("music" in thisScreenName):
 #             print("screen name music match +15")
             thisScore = thisScore + 15
+    
+        if ("fanaccount" in thisScreenName or "fanpage" in thisScreenName):
+#             print("fan account: -100")
+            thisScore = thisScore - 100
 
         # check verified
         if (account['verified'] == True):
@@ -92,13 +100,17 @@ def findHandle(artistName):
         thisScore = thisScore + followersPoints
 #         print("followers: +" + str(followersPoints))
 
-        # if they have an image
+        # if they don't have an image
         if (account['default_profile_image']):
 #             print("no background image: -50")
             thisScore = thisScore - 50
             
         # see if they have a url
         if (account['url'] != None):
+            
+#             print("have link: +20")
+            thisScore = thisScore + 20
+                
             r = requests.head(account['url'], allow_redirects=True)
             accountLink = r.url.lower()
             musicSites = ['soundcloud''bandcamp','spotify','itunes']
@@ -127,7 +139,7 @@ def findHandle(artistName):
                 thisScore = thisScore + 20
 
         # look for fan accounts
-        if ("fan account" in description):
+        if ("fan account" in description or "fan page" in description):
 #             print("fan account: -100")
             thisScore = thisScore - 100
 
