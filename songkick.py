@@ -103,5 +103,5 @@ def getUpcomingShows(daysAhead, metroId):
     return data
 
 # this adds the correct ordinal to the date
-ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
+ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4])
 
