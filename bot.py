@@ -149,9 +149,7 @@ def sendNextTweet(toTweet):
     if (len(toTweet) != 0):
         
         now = datetime.now()
-        if (now.hour < 21):
-
-            # maybe add a check now or somekind of resorting logic to make sure show has not already happened
+        if (now.hour < 21 and > 7):
 
             timeNow = datetime.now(eastern)
 
