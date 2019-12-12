@@ -63,10 +63,6 @@ def findHandle(artistName):
         if ("music" in thisName):
 #             print("name music match +30")
             thisScore = thisScore + 30
-    
-        if ("fanaccount" in thisName or "fanpage" in thisName):
-#             print("fan account: -100")
-            thisScore = thisScore - 100
 
         # check screen name
         if (artistName == thisScreenName):
@@ -83,10 +79,6 @@ def findHandle(artistName):
         if ("music" in thisScreenName):
 #             print("screen name music match +15")
             thisScore = thisScore + 15
-    
-        if ("fanaccount" in thisScreenName or "fanpage" in thisScreenName):
-#             print("fan account: -100")
-            thisScore = thisScore - 100
 
         # check verified
         if (account['verified'] == True):
@@ -100,17 +92,13 @@ def findHandle(artistName):
         thisScore = thisScore + followersPoints
 #         print("followers: +" + str(followersPoints))
 
-        # if they don't have an image
+        # if they have an image
         if (account['default_profile_image']):
 #             print("no background image: -50")
             thisScore = thisScore - 50
             
         # see if they have a url
         if (account['url'] != None):
-            
-#             print("have link: +20")
-            thisScore = thisScore + 20
-                
             r = requests.head(account['url'], allow_redirects=True)
             accountLink = r.url.lower()
             musicSites = ['soundcloud''bandcamp','spotify','itunes']
@@ -139,7 +127,7 @@ def findHandle(artistName):
                 thisScore = thisScore + 20
 
         # look for fan accounts
-        if ("fan account" in description or "fan page" in description):
+        if ("fan account" in description):
 #             print("fan account: -100")
             thisScore = thisScore - 100
 
@@ -157,7 +145,7 @@ def findHandle(artistName):
     
 # this runs every hour, it sends the first tweet that is qualified if there is one
 def sendNextTweet(toTweet):
-    print(len(toTweet))
+
     if (len(toTweet) != 0):
         
         now = datetime.now()
@@ -189,7 +177,13 @@ def sendNextTweet(toTweet):
     return toTweet
 
 
+def getVenueHandle(venueName):
+    venueHandle = "None"
+    venues = venue_name_dict.keys()
+    if venueName in venues:
+        venueHandle = venue_name_dict[venueName]
     
+    return venueHandle
 
 
 # this runs once a day, it finds new artists in the area
@@ -223,11 +217,19 @@ def runBot(days, cityName, cityId, artistsWhoPlayedInDC):
                 # make the tweet string
                 dateString = datetime.strptime(eventDate, "%Y-%m-%d").strftime("%B") + " " + ordinal(datetime.strptime(eventDate, "%Y-%m-%d").day)
                 content = " is playing their first show in DC!"
+                venueHandle = getVenueHandle(venueName)
+               
                 if (billingIndex == 1):
-                    content = content + " They are headlining at " + venueName + " on " + dateString + " " + eventUrl
+                    content = content + " They are headlining at " + venueName
                 else:
-                    content = content + " They are opening at " + venueName + " on " + dateString + " " + eventUrl   
+                    content = content + " They are opening at " + venueName   
+                  
+                if venueHandle != "None":
+                    content = content + " " + venueHandle + " on " + dateString + " " + eventUrl 
+                else:
+                    content = content + " on " + dateString + " " + eventUrl  
                     
+                print(content)
                 # fix times that are null with noon of the day of cencert so it goes first
                 if (concertTime == None):
                     concertTime = datetime.strptime(eventDate,"%Y-%m-%d")
@@ -293,4 +295,3 @@ def everyHour():
     toTweet = sendNextTweet(toTweet)
     clearTable()
     writeTable(toTweet)
-    

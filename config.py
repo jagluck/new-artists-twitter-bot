@@ -36,6 +36,31 @@ table_name =  os.environ['table_name']
 # heroku_app_name =  keys['heroku_app_name']
 # table_name =  keys['table_name']
 
+venue_name_dict = {
+    "9:30 Club" : "@930Club",
+    "Songbyrd Music House " : "@SongbyrdDC",
+    "Atlas Brew Works" : "@AtlasBrewWorks",
+    "Echostage" : "@echostage",
+    "U Street Music Hall" : "@uhalldc",
+    "Black Cat" : "@BlackCatDC",
+    "Sixth & I" : "@SixthandI",
+    "Velvet Lounge" : "@VelvetLoungeDC",
+    "Flash" : "@FlashClubDC",
+    "Slash Run" : "@slashrundc",
+    "DC9 Nightclub" : "@dc9club",
+    "The Wine Garden, City Winery DC" : "@CityWineryDC",
+    "City Winery" : "@CityWineryDC",
+    "Rock & Roll Hotel" : "@rocknrollhotel",
+    "7DrumCity" : "@7DrumCity",
+    "7 Drum City" : "@7DrumCity",
+    "Union Stage" : "@unionstage",
+    "Hirshhorn Museum and Sculpture Garden" : "@hirshhorn",
+    "Pie Shop" : "@pieshopdc",
+    "Twins Jazz" : "@twinsjazzclub",
+    "The Anthem" : "@TheAnthemDC"
+}
+
 from database import *
 from songkick import *
 from bot import *
+
