@@ -38,7 +38,7 @@ table_name =  os.environ['table_name']
 
 venue_name_dict = {
     "9:30 Club" : "@930Club",
-    "Songbyrd Music House " : "@SongbyrdDC",
+    "Songbyrd Music House" : "@SongbyrdDC",
     "Atlas Brew Works" : "@AtlasBrewWorks",
     "Echostage" : "@echostage",
     "U Street Music Hall" : "@uhalldc",
