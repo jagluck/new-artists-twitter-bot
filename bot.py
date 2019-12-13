@@ -149,7 +149,7 @@ def sendNextTweet(toTweet):
     if (len(toTweet) != 0):
         
         now = datetime.now()
-        if (now.hour < 21 and > 7):
+        if (now.hour < 21 and now.hour > 7):
 
             timeNow = datetime.now(eastern)
 
