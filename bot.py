@@ -267,7 +267,7 @@ def onceADay():
     cityName = "Washington, DC, US"
     cityId = "1409"
     days = 3
-    toTweetNew  = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
+    toTweetNew = runBot(days,cityName,cityId,artistsWhoPlayedInDC)
 
     # make sure we don't already have a artist
     toTweetNew = toTweetNew[~toTweetNew['artistId'].isin(artistsWhoPlayedInDC)]
@@ -275,7 +275,7 @@ def onceADay():
     toTweet = pd.concat([toTweet, toTweetNew], ignore_index=True)
     # remove shows that are very old
     twoWeeksAgo = datetime.now(eastern) - timedelta(weeks=(2))
-    toTweet = toTweetNew[toTweetNew['concertTime'] > twoWeeksAgo]
+    toTweet = toTweet[toTweet['concertTime'] > twoWeeksAgo]
 
     # sort by time
     toTweet = toTweet.sort_values(by=['concertTime'], ascending=True)
