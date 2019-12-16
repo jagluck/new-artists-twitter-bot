@@ -99,19 +99,22 @@ def findHandle(artistName):
             
         # see if they have a url
         if (account['url'] != None):
-            r = requests.head(account['url'], allow_redirects=True)
-            accountLink = r.url.lower()
-            musicSites = ['soundcloud''bandcamp','spotify','itunes']
-            for musicSite in musicSites:
-                if musicSite in accountLink:
-#                     print("music site link " + musicSite + ": +50")
-                    thisScore = thisScore + 50
-                    
-            if (artistName in accountLink):
-#                 print("site link " + artistName + ": +30")
-                thisScore = thisScore + 30
-#             print(r.url)
+            try:
+                r = requests.head(account['url'], allow_redirects=True)
+                
+                accountLink = r.url.lower()
+                musicSites = ['soundcloud''bandcamp','spotify','itunes']
+                for musicSite in musicSites:
+                    if musicSite in accountLink:
+    #                     print("music site link " + musicSite + ": +50")
+                        thisScore = thisScore + 50
 
+                if (artistName in accountLink):
+    #                 print("site link " + artistName + ": +30")
+                    thisScore = thisScore + 30
+    #             print(r.url)
+            except requests.exceptions.RequestException as e:  
+                print(e)
         # private/public
         if (account['protected']):
 #             print("protected: -50")
