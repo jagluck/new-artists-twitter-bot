@@ -151,10 +151,8 @@ def sendNextTweet(toTweet):
 
     if (len(toTweet) != 0):
         
-        now = datetime.now()
-        if (now.hour < 21 and now.hour > 7):
-
-            timeNow = datetime.now(eastern)
+        timeNow = datetime.now(eastern)
+        if (timeNow.hour < 21 and timeNow.hour > 7):
 
             didWeTweet = False
 

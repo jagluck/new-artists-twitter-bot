@@ -39,6 +39,7 @@ table_name =  os.environ['table_name']
 venue_name_dict = {
     "9:30 Club" : "@930Club",
     "Songbyrd Music House" : "@SongbyrdDC",
+    "Songbyrd Vinyl Lounge" : "@SongbyrdDC",
     "Atlas Brew Works" : "@AtlasBrewWorks",
     "Echostage" : "@echostage",
     "U Street Music Hall" : "@uhalldc",
@@ -57,7 +58,9 @@ venue_name_dict = {
     "Hirshhorn Museum and Sculpture Garden" : "@hirshhorn",
     "Pie Shop" : "@pieshopdc",
     "Twins Jazz" : "@twinsjazzclub",
-    "The Anthem" : "@TheAnthemDC"
+    "The Anthem" : "@TheAnthemDC",
+    "Sofar D.C." : "@sofardc",
+    "Kreeger Museum of Art" : "@KreegerMuseum"
 }
 
 from database import *
