@@ -51,10 +51,12 @@ def findHandle(artistName):
         # check name
         if (artistName == thisName):
 #             print("name perfect match +50")
-            thisScore = thisScore + 50
+            thisScore = thisScore + 40
         elif (artistName in thisName):
 #             print("name sub match +25")
             thisScore = thisScore + 25
+        else:
+            thisScore = thisScore - 25
 
         if ("band" in thisName):
 #             print("name band match +30")
@@ -83,7 +85,7 @@ def findHandle(artistName):
         # check verified
         if (account['verified'] == True):
 #             print("verified +20")
-            thisScore = thisScore + 20
+            thisScore = thisScore + 10
 
         # check followers
         followersPoints = math.ceil(account['followers_count']/100)
@@ -103,15 +105,11 @@ def findHandle(artistName):
                 r = requests.head(account['url'], allow_redirects=True)
                 
                 accountLink = r.url.lower()
-                musicSites = ['soundcloud''bandcamp','spotify','itunes']
+                musicSites = ['soundcloud''bandcamp','spotify','itunes','music']
                 for musicSite in musicSites:
                     if musicSite in accountLink:
     #                     print("music site link " + musicSite + ": +50")
-                        thisScore = thisScore + 50
-
-                if (artistName in accountLink):
-    #                 print("site link " + artistName + ": +30")
-                    thisScore = thisScore + 30
+                        thisScore = thisScore + 30
     #             print(r.url)
             except requests.exceptions.RequestException as e:  
                 print(e)
@@ -123,7 +121,7 @@ def findHandle(artistName):
         # check description
 
         description = account['description'].lower()
-        descriptionWordList = ['mgmt', 'managment','band','inquiries','music','tour','album','stream','song','single']
+        descriptionWordList = ['mgmt', 'managment','band','inquiries','music','tour','album','stream','song','single', 'booking']
         for word in descriptionWordList:
             if word in description:
 #                 print("description match " + word + ": +20")

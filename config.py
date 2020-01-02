@@ -40,6 +40,7 @@ venue_name_dict = {
     "9:30 Club" : "@930Club",
     "Songbyrd Music House" : "@SongbyrdDC",
     "Songbyrd Vinyl Lounge" : "@SongbyrdDC",
+    "Songbyrd - Upstairs" : "@SongbyrdDC",
     "Atlas Brew Works" : "@AtlasBrewWorks",
     "Echostage" : "@echostage",
     "U Street Music Hall" : "@uhalldc",
@@ -60,7 +61,16 @@ venue_name_dict = {
     "Twins Jazz" : "@twinsjazzclub",
     "The Anthem" : "@TheAnthemDC",
     "Sofar D.C." : "@sofardc",
-    "Kreeger Museum of Art" : "@KreegerMuseum"
+    "Kreeger Museum of Art" : "@KreegerMuseum",
+    "Dive" : "@DIVEBarDC",
+    "Renaissance Downtown Hotel" : '@RenDC_Downtown',
+    "The Hamilton Live" : '@thehamiltondc',
+    "Comet Ping Pong" : '@cometpingpong',
+    "Vinyl Lounge, Gypsy Sally's" : '@GypsySallys',
+    "Gypsy Sally's" : '@GypsySallys',
+    "The Miracle Theatre" : '@TheMiracleDC',
+    "Dock5 @ Union Market" : '@UnionMarketDC',
+    "Union Market" : '@UnionMarketDC'
 }
 
 from database import *
