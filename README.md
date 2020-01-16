@@ -23,7 +23,7 @@ There are two functions that kick off the bot.
 
 ```onceADay():``` This runs every morning. It gets data from songkick for concerts in the next three days. For each artist it searches through their songkick history and if they have never played in DC before it add them to a list of concerts to tweet. We get the concert times and adjust them slightly for openers (by one second per order in front of headliner) to place openers before headlines. If these are not already in the database we add them.
 
-```everyHour():``` This runs every day between 7am and 9pm. We read from the database and find the most recent concert that hasn't already happened and has not already been tweeted. We send the tweet and update the database that is has been sent. Finally we remove items in the database that are older than two weeks old. 
+```everyHour():``` This runs every day between 7am and 9pm. We read from the database and find the most recent concert that hasn't already happened and has not already been tweeted. If there is an eligable tweet, we send the tweet and update the database that it has been sent. Finally we remove items in the database that are older than two weeks old. 
 
 ### Files
 
