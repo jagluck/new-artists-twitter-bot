@@ -70,7 +70,8 @@ venue_name_dict = {
     "Gypsy Sally's" : '@GypsySallys',
     "The Miracle Theatre" : '@TheMiracleDC',
     "Dock5 @ Union Market" : '@UnionMarketDC',
-    "Union Market" : '@UnionMarketDC'
+    "Union Market" : '@UnionMarketDC',
+    "Howard Theatre" : '@HowardTheatre'
 }
 
 from database import *
